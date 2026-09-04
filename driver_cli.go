@@ -14,6 +14,7 @@ import (
 // - Wayland: wl-copy / wl-paste
 // - X11: xclip, xsel
 // - macOS: pbcopy / pbpaste
+// - Android (Termux with the Termux:API add-on): termux-clipboard-get / termux-clipboard-set
 type CLIDriver struct{}
 
 const cliTimeout = 2 * time.Second
@@ -29,6 +30,10 @@ func (d *CLIDriver) Name() string {
 func (d *CLIDriver) Available() bool {
 	if runtime.GOOS == "darwin" {
 		_, err := exec.LookPath("pbcopy")
+		return err == nil
+	}
+	if runtime.GOOS == "android" {
+		_, err := exec.LookPath("termux-clipboard-get")
 		return err == nil
 	}
 	if os.Getenv("WAYLAND_DISPLAY") != "" {
@@ -54,6 +59,17 @@ func (d *CLIDriver) ReadText() (string, error) {
 	if runtime.GOOS == "darwin" {
 		if _, err := exec.LookPath("pbpaste"); err == nil {
 			cmd := exec.CommandContext(ctx, "pbpaste")
+			out, err := cmd.Output()
+			if err != nil {
+				return "", err
+			}
+			return string(out), nil
+		}
+	}
+
+	if runtime.GOOS == "android" {
+		if _, err := exec.LookPath("termux-clipboard-get"); err == nil {
+			cmd := exec.CommandContext(ctx, "termux-clipboard-get")
 			out, err := cmd.Output()
 			if err != nil {
 				return "", err
@@ -99,6 +115,14 @@ func (d *CLIDriver) WriteText(text string) error {
 	if runtime.GOOS == "darwin" {
 		if _, err := exec.LookPath("pbcopy"); err == nil {
 			cmd := exec.CommandContext(ctx, "pbcopy")
+			cmd.Stdin = strings.NewReader(text)
+			return cmd.Run()
+		}
+	}
+
+	if runtime.GOOS == "android" {
+		if _, err := exec.LookPath("termux-clipboard-set"); err == nil {
+			cmd := exec.CommandContext(ctx, "termux-clipboard-set")
 			cmd.Stdin = strings.NewReader(text)
 			return cmd.Run()
 		}

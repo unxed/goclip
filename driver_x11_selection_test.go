@@ -1,3 +1,5 @@
+//go:build !android
+
 package goclip
 
 // These run against a real X server, which on a machine without one is no

@@ -1,3 +1,5 @@
+//go:build !android
+
 package goclip
 
 // The X11 clipboard, spoken directly to the server through XGB.

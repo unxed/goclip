@@ -1,6 +1,7 @@
 package goclip
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -189,8 +190,18 @@ func TestGoclip_AllDriversFailing(t *testing.T) {
 	orig := ActiveDriver()
 	defer SetActiveDriver(orig)
 
-	// Set custom driver pointing to impossible file path
-	failingFile := NewFileDriver("/proc/non_existent_folder_xyz/clip.data")
+	if origFile, ok := GetDriver("file"); ok {
+		defer RegisterDriver(origFile)
+	}
+
+	// Point the fallback file driver below a regular file, so creating its
+	// directory fails on every OS. (A path like "/proc/..." is writable on
+	// Windows, where it resolves to C:\proc\...)
+	blocker := filepath.Join(t.TempDir(), "not_a_dir")
+	if err := os.WriteFile(blocker, []byte("x"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	failingFile := NewFileDriver(filepath.Join(blocker, "sub", "clip.data"))
 	RegisterDriver(failingFile)
 	failingMock := &mockCustomDriver{name: "failing_primary", available: false}
 	SetActiveDriver(failingMock)

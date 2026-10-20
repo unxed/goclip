@@ -99,3 +99,21 @@ func main() {
 ## Testing Guide
 
 Инструкция для ручного тестирования на русском языке: [TESTING_RU.md](TESTING_RU.md).
+
+## Clipboard images
+
+`ReadImage(ctx)` returns `image.Image`, or `ErrNoImage` when no supported image
+is offered, `ErrUnsupportedFormat` for text-only drivers, and a diagnostic error
+for failed reads or corrupt data. Existing `Driver` implementations are unchanged;
+image support is the optional `ImageReader` interface.
+
+`ReadContents(ctx)` reads an image and the actual accompanying text without the
+file fallback. `ContentsReader` allows atomic snapshots; Windows copies both
+representations while holding one clipboard lock. Other backends capture their
+representations during the same read operation.
+
+Windows accepts registered PNG and uncompressed 24/32-bit DIB/V4/V5 formats.
+X11 uses native selection requests with incremental-transfer support. Wayland
+uses `wl-paste` MIME negotiation (install wl-clipboard for this backend). macOS
+uses the system JXA/AppKit bridge to read PNG or convert TIFF to PNG. Builds stay
+pure Go with `CGO_ENABLED=0`. Encoded inputs and decoded dimensions are bounded.
